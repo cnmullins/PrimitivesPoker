@@ -20,9 +20,9 @@ public class Blind : MonoBehaviour {
         // public int getIndex
         // public bool mustPlayerCall
 
-    private uint _buyIn;
-    private float _baseVal;
-    private float _incrementorVal;
+    private uint _buyIn = 15;
+    private float _baseVal = 1f;
+    private float _incrementorVal = 5f;
 
     private IEnumerator Start() {
         var menu = GameObject.Find("MainMenuCanvas");
@@ -31,11 +31,10 @@ public class Blind : MonoBehaviour {
             return GameManager.arePlayersInScene;
         });
         // get players
-        iterator = new PlayerIterator(new List<BasePlayer>(
-                            from seat in GameManager.instance.playerSpawnPos
+        iterator = new PlayerIterator(
+                            (from seat in GameManager.instance.playerSpawnPos
                             where seat.childCount > 0
-                            select seat.GetChild(0).GetComponent<BasePlayer>()));
-
+                            select seat.GetChild(0).GetComponent<BasePlayer>()).ToList());
     }
 
     /// <summary>

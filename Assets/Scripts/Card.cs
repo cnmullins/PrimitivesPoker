@@ -2,8 +2,11 @@
 Author: Christian Mullins
 Summary: Class to construct cards based on enumerators.
 */
+using UnityEngine;
+using UnityEngine.UI;
 using System.Linq;
 using System.Collections.Generic;
+
 public enum Suit {
     Spade, Club, Heart, Diamond
 }
@@ -12,8 +15,8 @@ public enum Suit {
 /// Int based enum ranking card value (Aces high)
 /// </summary>
 public enum Value {
-    Two, Three, Four, Five, Six, Seven, 
-    Eight, Nine, Ten, Jack, Queen, King, Ace
+    Ace, Two, Three, Four, Five, Six, Seven, 
+    Eight, Nine, Ten, Jack, Queen, King
 }
 
 /// <summary>
@@ -25,15 +28,13 @@ public enum Score {
 }
 
 public class Card {
-    public Suit suit   { get { return _suit;  } }
-    public Value value { get { return _value; } }
-
-    private Suit _suit;
-    private Value _value;
+    public static Color BACK_COLOR => new Color(1f, 0.5f, 0.5f, 0.5f);
+    public Suit suit   { get; private set; }
+    public Value value { get; private set; }
 
     public Card(Suit s, Value v) {
-        _suit = s;
-        _value = v;
+        suit = s;
+        value = v;
     }
 
     /// <summary>
@@ -65,6 +66,20 @@ public class Card {
             case Suit.Diamond: output += "Diamonds"; break;
         }
         return output;
+    }
+
+    public static RawImage GetCardImage(in Card card) {
+        string imagePath = UnityEngine.Application.dataPath + "/Material/Cards/";
+        switch (card.suit) {
+            case Suit.Spade:   imagePath += "Spade.png";   break;
+            case Suit.Club:    imagePath += "Club.png";    break;
+            case Suit.Heart:   imagePath += "Heart.png";   break;
+            case Suit.Diamond: imagePath += "Diamond.png"; break;
+        }
+        
+        var newImage = UnityEngine.Resources.Load<RawImage>(imagePath);
+        newImage.uvRect = new Rect((int)card.value * 0.15f, 0f, 0.85f, 1f);
+        return newImage;
     }
 
     /// <summary>

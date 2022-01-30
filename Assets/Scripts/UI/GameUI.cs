@@ -11,40 +11,46 @@ using TMPro;
 
 [RequireComponent(typeof(Canvas))]
 public class GameUI : MonoBehaviour {
+    public static GameUI instance; //singleton
+
     public GameObject actionGroup;
     public GameObject balancesGroup;
     public TMP_Text betValText;
+    public TMP_Text potText;
     public Slider betSlider;
     public Button checkButton;
     public Button callButton;
     public TMP_Text betText;
-    public Scrollbar decisionTimerBar;
-    public float? time     { get { return _timer; } }
-    public bool isTimeUp   { get { return _timer > _decisionTime; } }
+    public Scrollbar decisionTimerBar; // NOTE: not yet implemented
+    public float? timer    { get; private set; }
+    public bool isTimeUp   { get { return timer > _decisionTime; } }
+    public LinkedListNode<BasePlayer> iter { get; private set; }
 
-    private float? _timer;
     private Slider _betSlider;
     private float _decisionTime;
     private TMP_Text[] _balanceTexts;
+    private int _curIterIndex => new List<BasePlayer>(Dealer.playersLL).IndexOf(iter.Value);
 
     private IEnumerator Start() {
-        _timer   = null;
+        timer = null;
+        instance = this;
         _balanceTexts = balancesGroup.GetComponentsInChildren<TMP_Text>();
         yield return new WaitUntil(() => {
             return GameManager.arePlayersInScene;
         });
 
+        iter = Dealer.playersLL.First;
         actionGroup.SetActive(true);
         balancesGroup.SetActive(true);
         yield return new WaitForFixedUpdate();
-        var tempIter   = GameManager.gameIterator;
-        int startIndex = tempIter.getIndex;
+        var tempIter   = Dealer.playersLL.First;
+        //int startIndex = tempIter.getIndex;
         do {
-            BasePlayer player = tempIter.currentPlayer?.Value;
+            BasePlayer player = tempIter.Value;
             // only setup if not null
             player?.SetupBalanceText(_balanceTexts[player.seatIndex]);
-            tempIter.Iterate();
-        } while (tempIter.getIndex != startIndex);
+            tempIter = tempIter.Next;//tempIter.Va.Iterate();
+        } while (tempIter != null);
         // hide any unused Balance Texts
         var seats = GameManager.instance.playerSpawnPos;
         for (int i = 0; i < seats.Length; ++i) {
@@ -52,40 +58,50 @@ public class GameUI : MonoBehaviour {
                 _balanceTexts[i].text = string.Empty;
             }
         }
-        yield return null;
+        betValText.text = "$0";
+        potText.text = "$0";
     }
     // set PlayerActionUI through
 
     /* PLAYER ACTION HANDLING THROUGH UI */
 #region PlayerActionUI    
     public void OnClick_Check() {
-        GameManager.gameIterator.currentPlayer.Value.Check();
-        GameManager.gameIterator.Iterate();
-        MoveToNextPlayer(GameManager.gameIterator.getIndex);
+        iter.Value.Check();
+        iter = iter.Next;
+        _MoveToCurrentPlayer();
     }
 
     public void OnClick_Fold() {
-        GameManager.gameIterator.currentPlayer.Value.Fold();
-        GameManager.gameIterator.Iterate();
-        MoveToNextPlayer(GameManager.gameIterator.getIndex);
+        iter.Value.Fold();
+        iter = iter.Next;
+        _MoveToCurrentPlayer();
     }
 
     public void OnClick_Call() {
-        GameManager.gameIterator.currentPlayer.Value.Call();
-        GameManager.gameIterator.Iterate();
-        MoveToNextPlayer(GameManager.gameIterator.getIndex);
+        iter.Value.Call();
+        iter = iter.Next;
+        _MoveToCurrentPlayer();
+        //adjust player balance UI
+        _balanceTexts[_curIterIndex].text = "$" + iter.Value.balance;
+        //adjust pot
+        int newBet = Mathf.RoundToInt(_betSlider.value * (float)iter.Value.balance);
+        potText.text = "$" + newBet;
     }
 
     public void OnClick_Bet() {
-        GameManager.gameIterator.currentPlayer.Value.Bet(betSlider.value);
-        GameManager.gameIterator.Iterate();
-        MoveToNextPlayer(GameManager.gameIterator.getIndex);
+        iter.Value.Bet(betSlider.value);
+        iter = iter.Next;
+        _MoveToCurrentPlayer();
+        //adjust player balance UI
+        _balanceTexts[_curIterIndex].text = "$" + iter.Value.balance;
+        //adjust pot
+        int newBet = Mathf.RoundToInt(_betSlider.value * (float)iter.Value.balance);
+        potText.text = "$" + newBet;
     }
 
     public void OnSlide_Bet() {
         betValText.text = "$" + 
-            (uint)(betSlider.value * (float)GameManager.gameIterator
-                                            .currentPlayer.Value.balance);
+            (uint)(betSlider.value * (float)iter.Value.balance);
     }
 
     private void _ToggleCallButton(bool showing) {
@@ -97,7 +113,7 @@ public class GameUI : MonoBehaviour {
 #endregion
     /* END: PLAYER ACTION HANDLING THROUGH UI */
 
-    private void MoveToNextPlayer(int playerIndex) {
+    private void _MoveToCurrentPlayer() {
         //GameManager.gameIterator.Iterate();
         if (!Dealer.instance.IsRoundOver()) {
             
@@ -105,7 +121,7 @@ public class GameUI : MonoBehaviour {
         }
         // reset UI values
         var moveTo = Camera.main.WorldToScreenPoint(
-                    GameManager.gameIterator.currentPlayer.Value.transform.position);
+                    iter.Value.transform.position);
         moveTo.y = actionGroup.transform.position.y;
         actionGroup.transform.position = moveTo;
         // move timer UI (will be incorporated later)
@@ -115,7 +131,7 @@ public class GameUI : MonoBehaviour {
     /// Turn the timer on or off based on the passing argument.
     /// </summary>
     /// <param name="setting">Turning on or off.</param>
-    private void SetTimer(bool setting) {
-        _timer = (setting) ? new float?(0f) : null;
+    private void _SetTimer(bool setting) {
+        timer = (setting) ? new float?(0f) : null;
     }
 }

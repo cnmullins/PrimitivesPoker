@@ -22,9 +22,12 @@ public class GameManager : MonoBehaviour {
     public Transform[] playerSpawnPos;
     [Header("Card Suit Image")]
     public static Material[] cardSuitMats;
-    public static PlayerFocuser gameIterator;
+    //public static PlayerFocuser gameIterator;
     public static bool arePlayersInScene { get {
         return instance.playerSpawnPos.Any<Transform>(s => s.childCount > 0);
+    } }
+    public static bool isGameOver { get {
+        return Dealer.playersLL.Count() <= 1;
     } }
 
     private List<PlayerAction> _actions;
@@ -36,10 +39,48 @@ public class GameManager : MonoBehaviour {
         yield return new WaitUntil(() => {
             return arePlayersInScene;
         });
+        /*
         gameIterator = new PlayerFocuser(new List<BasePlayer>(
                             from seat in GameManager.instance.playerSpawnPos
                             where seat.childCount > 0
                             select seat.GetChild(0).GetComponent<BasePlayer>()));
+        */
+        //Handle ALL logic here
+        do {
+            _StartNewHand();
+            bool cardFlipReady = false;
+            do {
+                var curPlayNode = Dealer.playersLL.First;
+                do {
+                    
+                    //cycle through players until all active players have paid current bet or folded
+                    //yield return wait for player input
+                    if (curPlayNode.Value.isHuman)
+                        yield return new WaitUntil(delegate {
+                            return curPlayNode.Value.handAction != PlayerAction.NoAction
+                            || curPlayNode.Value.handAction == PlayerAction.Fold;
+                        });
+                    else {
+                        var bot = (BotPlayer)curPlayNode.Value;
+                        print("Implement bot action");
+                        //bot.GenerateAction();
+                    }                
+                //iterate until new card flip (check for uniform community bet)
+                } while (Dealer.playersLL.First(p => p.currentBet != Dealer.communityBet));
+                //check for river (count com cards)
+                /*
+                if (Dealer.communityCards.Count <= 4)
+                    Dealer.
+                */
+
+                //while not river
+            } while (Dealer.communityCards.Count < 5);
+
+            // TODO: increase blind values
+
+            _EndCurrentHand();
+
+        } while (!isGameOver);
     }
 
     /// <summary>
@@ -70,35 +111,47 @@ public class GameManager : MonoBehaviour {
     /// <summary>
     /// Reset all values, get new deck, pass cards, and pass the buttons.
     /// </summary>
-    private void StartNewHand() {
+    private void _StartNewHand() {
         Dealer.instance.GetNewDeck();
-        foreach (var p in Dealer.instance.players) {
+        foreach (var p in Dealer.playersLL) {
             p.currentBet = 0;
             p.hand = Dealer.instance.GetHand();
         }
         // increment all buttons
-        gameIterator.Iterate();
-        Dealer.instance.dealerButton.Iterate();
-        Dealer.instance.bigBlindButton.Iterate();
-        Dealer.instance.smallBlindButton.Iterate();
+        //gameIterator.Iterate();
+
+        //Dealer shift
+        StartCoroutine(Dealer.instance.dealerButton.IterateAsync());
+        StartCoroutine(Dealer.instance.bigBlindButton.IterateAsync());
+        StartCoroutine(Dealer.instance.smallBlindButton.IterateAsync());
         // start UI
         
     }
 
-    private void EndCurrentHand() {
+    private void _EndCurrentHand() {
         // dealer distributes pot to winner(s)
 
         Dealer.pot = 0;
+        Dealer.communityBet = 0;
         // dealer destroys hands
 
+        
+
         // dealer restores deck
+        
     }
 
-    private void UpdatePlayerActions() {
-        var players = Dealer.instance.players;
+    private void _UpdatePlayerActions() {
+        var playIt = Dealer.playersLL.First;
+        /*
         for (int i = 0; i < _actions.Count; ++i) {
             _actions[i] = players[i].handAction;
-        }
+        }*/
+        int i = 0;
+        do {
+            _actions[i] = playIt.Value.handAction;
+            playIt = playIt.Next;
+        } while (playIt != null);
     }
 
     /// <summary>
@@ -120,7 +173,7 @@ public class GameManager : MonoBehaviour {
     /// </summary>
     /// <returns>If all players are gone or not.</returns>
     public static bool HaveAllPlayersGone() {
-        foreach (var p in Dealer.instance.players) {
+        foreach (var p in Dealer.playersLL) {
             if (p.handAction == PlayerAction.NoAction) 
                 return false;
         }

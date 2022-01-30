@@ -6,53 +6,56 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Dealer : MonoBehaviour {
     public static Dealer instance;
     public static uint pot;
-    public BasePlayer curDealer;
+    public static BasePlayer curDealer;
     public static uint communityBet;
+    public GameObject comCardsParent;
     // delegates
-    public List<Card> communityCards   { get { return _communityCards; } }
-    public List<Card> curDeck          { get { return _curDeck; } }
-    public List<BasePlayer> players    { get { return _players; } }
-    public Blind bigBlindButton        { get { return _bigBlindButton; } }
-    public Blind smallBlindButton      { get { return _smallBlindButton; } }
-    public Blind dealerButton { get { return _dealerButton; } }
+    public static List<Card> communityCards   { get; private set; }
+    public static List<Card> curDeck          { get; private set; }
+    public static LinkedList<BasePlayer> playersLL    { get; private set; }
+    public Blind bigBlindButton               { get; private set; }
+    public Blind smallBlindButton             { get; private set; }
+    public Blind dealerButton                 { get; private set; }
 
-    private List<Card> _communityCards;
-    private List<Card> _curDeck;
-    private List<BasePlayer> _players;
-    private Blind _smallBlindButton;
-    private Blind _bigBlindButton;
-    private Blind _dealerButton;
+    private List<RawImage> _comCardsUI; //communityCardsUI
 
     private void Start() {
         instance = this;
-        _curDeck = new List<Card>();
-        _communityCards = new List<Card>();
+        curDeck = new List<Card>();
+        communityCards = new List<Card>();
+        _comCardsUI = new List<RawImage>(comCardsParent.GetComponentsInChildren<RawImage>());
     }
 
     public void InitializeValues() {
-        _players = (from player in GameManager.instance.playerSpawnPos
+        playersLL = new LinkedList<BasePlayer>
+                    (from player in GameManager.instance.playerSpawnPos
                     where player.transform.childCount > 0
-                    select player.GetChild(0).GetComponent<BasePlayer>()).ToList();
-
+                    select player.GetChild(0).GetComponent<BasePlayer>());                
+        // assign dealer
+        curDealer = playersLL.First.Value;
         // set buttons at their starting index
         foreach (var b in FindObjectsOfType<Blind>()) {
-            b.transform.position = _players[0].buttonPos;
+            b.transform.position = playersLL.First.Value.buttonPos;
             if (b.name == "DealerButton") {
-                _dealerButton = b;
+                dealerButton = b;
                 continue;
             }
             StartCoroutine(b.IterateAsync());
             if (b.name == "SmallBlindButton") {
-                _smallBlindButton = b;
+                smallBlindButton = b;
                 continue; 
             }
             StartCoroutine(b.IterateAsync());
-            _bigBlindButton = b;
+            bigBlindButton = b;
         }
+        // set up the pot
+        pot = 0;
+        
     }
 
     /// <summary>
@@ -69,21 +72,20 @@ public class Dealer : MonoBehaviour {
             }
         }
         // shuffle
-        ShuffleDeck(ref deck);
+        _ShuffleDeck(ref deck);
         deck.Sort((Card a, Card b) => {
             return UnityEngine.Random.Range(-1, 2);
         });
-        _curDeck = deck;
+        curDeck = deck;
     }
 
     /// <summary>
     /// Construct a hand from the current deck and remove cards from deck
     /// </summary>
     /// <returns>New hand.</returns>
-    public Tuple<Card, Card> GetHand() {
-        var hand = new Tuple<Card, Card>(_curDeck[0], _curDeck[1]);
-        _curDeck.Remove(hand.Item1);
-        _curDeck.Remove(hand.Item2);
+    public Card[] GetHand() {
+        var hand = new Card[2] { curDeck[0], curDeck[1] };
+        curDeck.RemoveRange(0, 2);
         return hand;
     }
 
@@ -92,7 +94,7 @@ public class Dealer : MonoBehaviour {
     /// the community pot.
     /// </summary>
     public void GatherBetsToPot() {
-        foreach (var p in players) {
+        foreach (var p in playersLL) {
             pot += p.currentBet;
             p.currentBet = 0;
         }
@@ -104,7 +106,7 @@ public class Dealer : MonoBehaviour {
     /// </summary>
     /// <returns>Is the round over or not.</returns>
     public bool IsRoundOver() {
-        foreach (var p in players) {
+        foreach (var p in playersLL) {
             if (p.handAction == PlayerAction.NoAction)
                 return false;
         }
@@ -119,11 +121,11 @@ public class Dealer : MonoBehaviour {
     public int DeclareWinner() {
         int winningIndex = -1;
         int currentWinner = 0;
-        var findMax = _players.ToList<BasePlayer>();
-        //_players.Max<BasePlayer>();
-        foreach (var p in _players) {
+        //var findMax = playersLL.ToList<BasePlayer>();
+        //playersLL.Max<BasePlayer>();
+        foreach (var p in playersLL) {
             var currentHand = new List<Card>(p.GetHandAsList());
-            currentHand.AddRange(_communityCards.ToList<Card>());
+            currentHand.AddRange(communityCards.ToList<Card>());
             //currentHand.Max<BasePlayer>(x => Card.ScoreHand(x));
             int temp = Card.ScoreHand(currentHand);
             if (temp < currentWinner) {
@@ -133,14 +135,21 @@ public class Dealer : MonoBehaviour {
         return winningIndex;
     }
 
-    public void DisplayCommunityCards(int numToDisplay) {
-        while (numToDisplay-- > 0) {
-            //display front then remove
-            _communityCards.RemoveAt(0);
+    public void Flop(in int count=1) {
+        if (count + communityCards.Count > 5) {
+            Debug.LogError("Illegal Mechanic: ComCards count surpases 5.");
+            return;
+        }
+        for (int i = 0; i < count; ++i) {
+            communityCards.Add(curDeck.First());
+            //TODO: update _comCardsUI
+            int newImageIndex = _comCardsUI.FindIndex(c => c.material == null);
+            _comCardsUI[newImageIndex] = Card.GetCardImage(curDeck.First());
+            curDeck.RemoveAt(0);
         }
     }
 
-    private void ShuffleDeck(ref List<Card> deck) {
+    private void _ShuffleDeck(ref List<Card> deck) {
         int deckSize = deck.Count;
         for (int i = 0; i < deckSize; ++i) {
             Card tempCard = deck[i];

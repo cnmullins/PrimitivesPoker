@@ -20,7 +20,7 @@ public class PlayerIterator {
     } }
 
     public PlayerIterator() {
-        Start();
+        Dealer.instance.StartCoroutine(Start());
     }
 
     public PlayerIterator(List<BasePlayer> players) {
@@ -48,10 +48,11 @@ public class PlayerIterator {
     /// </summary>
     public virtual void Iterate() {
         ++_index;
-        if (_index > Dealer.instance.players.Count) _index = 0;
+        if (_index > Dealer.playersLL.Count) _index = 0;
         // adjust class variables
         currentPlayer = currentPlayer?.Next ?? _playerRotation.First;
-        
-        foreach (var p in _playerRotation) p.SetupBalanceTextColor();
+        //CHECK IF EVERYTHING UPDATES STILL
+        //foreach (var p in _playerRotation) p.SetupBalanceTextColor();
     }
+    
 }
