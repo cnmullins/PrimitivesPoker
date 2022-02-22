@@ -55,6 +55,7 @@ public class Dealer : MonoBehaviour {
         }
         // set up the pot
         pot = 0;
+        communityBet = 0;
         
     }
 
@@ -62,7 +63,6 @@ public class Dealer : MonoBehaviour {
     /// Loop through all suites and values to create a new deck, shuffle,
     /// then assign to self.
     /// </summary>
-    /// <returns>New shuffled deck.</returns>
     public void GetNewDeck() {
         var deck = new List<Card>();
         // loop through all suites and values
@@ -71,11 +71,10 @@ public class Dealer : MonoBehaviour {
                 deck.Add(new Card((Suit)s, (Value)v));
             }
         }
+        
         // shuffle
-        _ShuffleDeck(ref deck);
-        deck.Sort((Card a, Card b) => {
-            return UnityEngine.Random.Range(-1, 2);
-        });
+        deck.Sort(0, deck.Count, new Card.ShuffleSorter());
+        
         curDeck = deck;
     }
 
@@ -144,7 +143,8 @@ public class Dealer : MonoBehaviour {
             communityCards.Add(curDeck.First());
             //TODO: update _comCardsUI
             int newImageIndex = _comCardsUI.FindIndex(c => c.material == null);
-            _comCardsUI[newImageIndex] = Card.GetCardImage(curDeck.First());
+            print("fix your code");
+            //_comCardsUI[newImageIndex] = Card.GetCardImage(curDeck.First());
             curDeck.RemoveAt(0);
         }
     }

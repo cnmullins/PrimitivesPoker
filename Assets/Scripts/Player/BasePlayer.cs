@@ -1,6 +1,6 @@
 ﻿/*
 Author: Christian Mullins
-Summary: Parent class for all player classes.
+Summary: Parent abstracts class for all player classes.
 */
 using System;
 using System.Collections.Generic;
@@ -11,11 +11,16 @@ public enum PlayerAction {
     Check, Bet, Call, Fold, AllIn, NoAction
 }
 
-public class BasePlayer : MonoBehaviour {
+public abstract class BasePlayer : MonoBehaviour {
     public uint balance;
     public uint currentBet;
     public PlayerAction handAction;
-    public Card[] hand = new Card[2];
+    public Card[] hand  { 
+        get { return _hand; }
+        set { _hand = value;
+            if (isHuman)
+                _uiObserver.SetHandUI(_hand);
+    } }
     public int seatIndex        { get; protected set; }
     public Vector3 buttonPos    { get; protected set; }
 
@@ -23,12 +28,17 @@ public class BasePlayer : MonoBehaviour {
 
     protected PlayerObserver _uiObserver;
     protected const float BUTTON_DISTANCE = 2f;
+    private Card[] _hand;
 
     // must be Awake() for instantiation + initialization
     protected virtual void Awake() {
+        char seatNum = transform.parent.name.Split('_')[1][0];
+        _uiObserver = GameObject.FindGameObjectWithTag("SeatBalances").transform.
+            Find("Seat" + seatNum + "_StatusUI").GetComponent<PlayerObserver>();
+        _hand = new Card[2];
         string parentStr = transform.parent.name;
-        seatIndex = (parentStr[parentStr.Length - 1] -  '0') - 1;
-        //balance = GameManager.instance.startBalance;
+        seatIndex = (parentStr[parentStr.Length - 1] - '0') - 1;
+        balance = GameManager.instance.startBalance;
         currentBet = 0;
         handAction = PlayerAction.NoAction;
 
@@ -104,19 +114,14 @@ public class BasePlayer : MonoBehaviour {
             _uiObserver = pO;
         }
     }
-/*
+
+    //toggled in GameManager Start() function
     public void ToggleBalanceHighlight(in bool active) {
         _uiObserver.balanceText.color = (active) ? Color.yellow : Color.white;
     }
-*/
-    public void SetupBalanceTextColor() {
-        if (_uiObserver == null) return;
-        if (this == GameUI.instance.iter.Value)
-            _uiObserver.balanceText.color = Color.yellow;
-        else
-            _uiObserver.balanceText.color = Color.white;
-    }
 
-    
+    public void Debug_PrintHand() {
+        print(name + ": " + hand[0].ToString() + ", " + hand[1]);
+    }
 }
 

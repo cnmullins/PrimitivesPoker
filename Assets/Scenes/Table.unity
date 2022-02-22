@@ -982,7 +982,7 @@ GameObject:
   - component: {fileID: 245646305}
   m_Layer: 0
   m_Name: SeatBalances
-  m_TagString: Untagged
+  m_TagString: SeatBalances
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3915,6 +3915,27 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 245646305}
     m_Modifications:
+    - target: {fileID: 5125160719880074261, guid: 789347afaa547d84392fda8be7be5ebe,
+        type: 3}
+      propertyPath: m_Type
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5125160719880074261, guid: 789347afaa547d84392fda8be7be5ebe,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 6414fb4f70b04214a80983ca873f7393,
+        type: 3}
+    - target: {fileID: 5125160719880074261, guid: 789347afaa547d84392fda8be7be5ebe,
+        type: 3}
+      propertyPath: m_FillAmount
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5125160719880074261, guid: 789347afaa547d84392fda8be7be5ebe,
+        type: 3}
+      propertyPath: m_UseSpriteMesh
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8642718230670962613, guid: 789347afaa547d84392fda8be7be5ebe,
         type: 3}
       propertyPath: m_Name
@@ -6657,6 +6678,21 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 245646305}
     m_Modifications:
+    - target: {fileID: 1137807980952408871, guid: 789347afaa547d84392fda8be7be5ebe,
+        type: 3}
+      propertyPath: m_CullTransparentMesh
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2311416887831763508, guid: 789347afaa547d84392fda8be7be5ebe,
+        type: 3}
+      propertyPath: m_Texture
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 2311416887831763508, guid: 789347afaa547d84392fda8be7be5ebe,
+        type: 3}
+      propertyPath: m_Material
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 8642718230670962613, guid: 789347afaa547d84392fda8be7be5ebe,
         type: 3}
       propertyPath: m_Name
@@ -6766,26 +6802,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8798869435727551888, guid: 789347afaa547d84392fda8be7be5ebe,
-        type: 3}
-      propertyPath: m_Texture
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 8798869435727551888, guid: 789347afaa547d84392fda8be7be5ebe,
-        type: 3}
-      propertyPath: m_UVRect.x
-      value: 0.15
-      objectReference: {fileID: 0}
-    - target: {fileID: 8798869435727551888, guid: 789347afaa547d84392fda8be7be5ebe,
-        type: 3}
-      propertyPath: m_UVRect.width
-      value: 0.085
-      objectReference: {fileID: 0}
-    - target: {fileID: 8798869435727551888, guid: 789347afaa547d84392fda8be7be5ebe,
-        type: 3}
-      propertyPath: m_UVRect.height
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 789347afaa547d84392fda8be7be5ebe, type: 3}

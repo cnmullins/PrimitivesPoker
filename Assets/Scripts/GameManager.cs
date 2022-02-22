@@ -3,6 +3,8 @@ Author: Christian Mullins
 Summary: Singleton instance that manipulates the entire flow of the game.
 */
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
@@ -29,42 +31,84 @@ public class GameManager : MonoBehaviour {
     public static bool isGameOver { get {
         return Dealer.playersLL.Count() <= 1;
     } }
-
     private List<PlayerAction> _actions;
     private int _numOfPlayers;
-    
+
+    private BasePlayer _currentPlayer;
+
+    #region UI_Variables
+    [Header("UI Variables")]
+    public GameObject actionGroup;
+    public GameObject balancesGroup;
+    public TMP_Text betText;
+    [SerializeField]
+    private Button _checkButton;
+    [SerializeField]
+    private Button _callButton;
+    [SerializeField]
+    private TMP_Text _potText;
+    [SerializeField]
+    private Slider _betSlider;
+    [SerializeField]
+    private TMP_Text[] _balanceTexts;
+    #endregion
+
     private IEnumerator Start() {
+        Application.targetFrameRate = 60;
         instance = this;
-        // *** maybe try to assign this as 'new PlayerFocuser()'
         yield return new WaitUntil(() => {
             return arePlayersInScene;
         });
-        /*
-        gameIterator = new PlayerFocuser(new List<BasePlayer>(
-                            from seat in GameManager.instance.playerSpawnPos
-                            where seat.childCount > 0
-                            select seat.GetChild(0).GetComponent<BasePlayer>()));
-        */
         //Handle ALL logic here
         do {
-            _StartNewHand();
-            bool cardFlipReady = false;
-            do {
-                var curPlayNode = Dealer.playersLL.First;
-                do {
-                    
+            yield return StartCoroutine(_StartNewHand());
+            //bool cardFlipReady = false;
+            do { //create new rotation with dealer button in mind & assign cards
+                var curRotation = Dealer.playersLL;
+                var curPlayNode = curRotation.First;
+                while (curRotation.First.Value != Dealer.curDealer) {
+                    if (!curRotation.First.Value.isActiveAndEnabled) {
+                        curRotation.RemoveFirst();
+                        continue;
+                    }
+                    curRotation.AddLast(curRotation.First);
+                    curRotation.RemoveFirst();
+                }
+                foreach (var player in curRotation) {
+                    player.hand = Dealer.instance.GetHand();
+                    //player.Debug_PrintHand();
+                }
+                
+                do { // start player turns
+                    curPlayNode.Value.ToggleBalanceHighlight(true);
                     //cycle through players until all active players have paid current bet or folded
                     //yield return wait for player input
-                    if (curPlayNode.Value.isHuman)
+                    if (curPlayNode.Value.isHuman) {
                         yield return new WaitUntil(delegate {
+                            print("Awaiting: " + curPlayNode.Value.transform.parent.name + " -> " + curPlayNode.Value.handAction);
                             return curPlayNode.Value.handAction != PlayerAction.NoAction
                             || curPlayNode.Value.handAction == PlayerAction.Fold;
                         });
+                    }
                     else {
                         var bot = (BotPlayer)curPlayNode.Value;
                         print("Implement bot action");
                         //bot.GenerateAction();
-                    }                
+                    }
+                    switch (curPlayNode.Value.handAction) {
+                        case PlayerAction.Check:
+                            break;
+                        case PlayerAction.Bet:
+                            Dealer.communityBet = curPlayNode.Value.currentBet;
+                            break;
+                        case PlayerAction.Call:
+                            curPlayNode.Value.currentBet = Dealer.communityBet;
+                            break;
+                        case PlayerAction.Fold:
+                            break;
+                    }
+                    curPlayNode.Value.ToggleBalanceHighlight(false);
+                    curPlayNode = curPlayNode.Next;
                 //iterate until new card flip (check for uniform community bet)
                 } while (Dealer.playersLL.First(p => p.currentBet != Dealer.communityBet));
                 //check for river (count com cards)
@@ -75,8 +119,6 @@ public class GameManager : MonoBehaviour {
 
                 //while not river
             } while (Dealer.communityCards.Count < 5);
-
-            // TODO: increase blind values
 
             _EndCurrentHand();
 
@@ -94,7 +136,7 @@ public class GameManager : MonoBehaviour {
         // determine seat spacing
         if (numOfPlayers <= 3){     
             startAt = Random.Range(0, 3);
-            increment += 1;
+            increment++;
         }
         else if (numOfPlayers < 6) {
             startAt = Random.Range(0, 2);
@@ -111,8 +153,11 @@ public class GameManager : MonoBehaviour {
     /// <summary>
     /// Reset all values, get new deck, pass cards, and pass the buttons.
     /// </summary>
-    private void _StartNewHand() {
+    private IEnumerator _StartNewHand() {
         Dealer.instance.GetNewDeck();
+        yield return new WaitUntil(delegate() {
+            return Dealer.curDeck.Count == 52;
+        });
         foreach (var p in Dealer.playersLL) {
             p.currentBet = 0;
             p.hand = Dealer.instance.GetHand();
@@ -121,9 +166,9 @@ public class GameManager : MonoBehaviour {
         //gameIterator.Iterate();
 
         //Dealer shift
-        StartCoroutine(Dealer.instance.dealerButton.IterateAsync());
-        StartCoroutine(Dealer.instance.bigBlindButton.IterateAsync());
-        StartCoroutine(Dealer.instance.smallBlindButton.IterateAsync());
+        yield return StartCoroutine(Dealer.instance.dealerButton.IterateAsync());
+        yield return StartCoroutine(Dealer.instance.bigBlindButton.IterateAsync());
+        yield return StartCoroutine(Dealer.instance.smallBlindButton.IterateAsync());
         // start UI
         
     }
@@ -179,4 +224,48 @@ public class GameManager : MonoBehaviour {
         }
         return true;
     }
+
+        /* PLAYER ACTION HANDLING THROUGH UI */
+#region PlayerActionUI    
+    public void OnClick_Check() {
+
+    }
+
+    public void OnClick_Fold() {
+
+    }
+
+    public void OnClick_Call() {
+        //ADD ACTIONS HERE
+
+        //adjust player balance UI
+        _balanceTexts[_currentPlayer.seatIndex].text = "$" + _currentPlayer.balance;
+        //adjust pot
+        int newBet = Mathf.RoundToInt(_betSlider.value * (float)_currentPlayer.balance);
+        _potText.text = "$" + newBet;
+    }
+
+    public void OnClick_Bet() {
+        _currentPlayer.Bet(_betSlider.value);
+        //adjust player balance UI
+        _balanceTexts[_currentPlayer.seatIndex].text = "$" + _currentPlayer.balance;
+        //adjust pot
+        int newBet = Mathf.RoundToInt(_betSlider.value * (float)_currentPlayer.balance);
+        _potText.text = "$" + newBet;
+    }
+
+    public void OnSlide_Bet() {
+        betText.text = "$" + 
+            (uint)(_betSlider.value * (float)_currentPlayer.balance);
+    }
+
+    private void _ToggleCallButton(bool showing) {
+        _callButton.enabled  = showing;
+        _checkButton.enabled = !showing;
+        // adjust bet slider to only allow +callValue
+    }
+
+#endregion
+    /* END: PLAYER ACTION HANDLING THROUGH UI */
+
 }

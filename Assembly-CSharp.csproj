@@ -45,7 +45,6 @@
      <Compile Include="Assets\Scripts\Player\BasePlayer.cs" />
      <Compile Include="Assets\Scripts\Player\BotPlayer.cs" />
      <Compile Include="Assets\Scripts\Player\HumanPlayer.cs" />
-     <Compile Include="Assets\Scripts\UI\GameUI.cs" />
      <Compile Include="Assets\Scripts\UI\MenuUI.cs" />
      <Compile Include="Assets\Scripts\UI\PlayerObserver.cs" />
      <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

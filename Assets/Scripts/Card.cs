@@ -4,6 +4,8 @@ Summary: Class to construct cards based on enumerators.
 */
 using UnityEngine;
 using UnityEngine.UI;
+using System;
+using System.Collections;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -28,9 +30,47 @@ public enum Score {
 }
 
 public class Card {
-    public static Color BACK_COLOR => new Color(1f, 0.5f, 0.5f, 0.5f);
+    //TODO: create comparerrs to randomize and initialize arrays into the right location
+    public class ValueSorter : IComparer<Texture> {
+        int IComparer<Texture>.Compare(Texture t1, Texture t2) {
+            int val1 = Convert.ToInt32(t1.ToString().Split('_')[0]);
+            int val2 = Convert.ToInt32(t2.ToString().Split('_')[0]);
+            if (val1 > val2)        return 1;
+            else if (val1 < val2)   return -1;
+            else                    return 0;
+        }
+    }
+    public class ShuffleSorter : IComparer<Card> {
+        int IComparer<Card>.Compare(Card c1, Card c2) {
+            return (UnityEngine.Random.value > 0.5f) ? -1 : 1;
+        }
+    }
+    public static Color BACK_COLOR => new Color(1f, 0.5f, 0.5f, 1.0f);
+    public static Color DEFAULT_COLOR => new Color(1f, 1f, 1f, 1f); //white
     public Suit suit   { get; private set; }
     public Value value { get; private set; }
+
+    public static Texture[][] cardAssets => _cardAssets;
+    private static Texture[][] _cardAssets;
+    
+    static Card() {
+        _cardAssets = new Texture[][] {
+            Resources.LoadAll<Texture>("Spades"),
+            Resources.LoadAll<Texture>("Clubs"),
+            Resources.LoadAll<Texture>("Hearts"),
+            Resources.LoadAll<Texture>("Diamonds"),
+        };
+        
+        for (int x = 0; x < _cardAssets.Length; ++x) {
+            var tempArr = new List<Texture>(_cardAssets[x]);
+            tempArr.Sort(0, _cardAssets[x].Length, new ValueSorter());
+            _cardAssets[x] = tempArr.ToArray();
+            for (int y = 0; y < _cardAssets[x].Length; ++y) {
+                //Debug.Log(x + ", " + y + ": " + _cardAssets[x][y]);
+            }   
+        }
+    }
+    
 
     public Card(Suit s, Value v) {
         suit = s;
@@ -41,7 +81,7 @@ public class Card {
     /// Properly format name of card.
     /// </summary>
     /// <returns>"'Value' of 'suit'"</returns>
-    public string GetString() {
+    public override string ToString() {
         string output = string.Empty;
         switch (value) {
             case Value.Two:     output += "Two";      break;
@@ -66,20 +106,6 @@ public class Card {
             case Suit.Diamond: output += "Diamonds"; break;
         }
         return output;
-    }
-
-    public static RawImage GetCardImage(in Card card) {
-        string imagePath = UnityEngine.Application.dataPath + "/Material/Cards/";
-        switch (card.suit) {
-            case Suit.Spade:   imagePath += "Spade.png";   break;
-            case Suit.Club:    imagePath += "Club.png";    break;
-            case Suit.Heart:   imagePath += "Heart.png";   break;
-            case Suit.Diamond: imagePath += "Diamond.png"; break;
-        }
-        
-        var newImage = UnityEngine.Resources.Load<RawImage>(imagePath);
-        newImage.uvRect = new Rect((int)card.value * 0.15f, 0f, 0.85f, 1f);
-        return newImage;
     }
 
     /// <summary>

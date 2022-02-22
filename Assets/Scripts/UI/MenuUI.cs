@@ -12,7 +12,6 @@ public class MenuUI : MonoBehaviour {
 
     public void StartGame() {
         int numOfPlayers = botNumSelector.value + 3;
-        //print(numOfPlayers);
         GameManager.instance.StartNewGame(numOfPlayers);
         gameObject.SetActive(false);
     }

@@ -10,8 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 3417721897911214750}
   - component: {fileID: 1202796213640861753}
-  - component: {fileID: 2311416887831763508}
-  m_Layer: 0
+  - component: {fileID: 3233250320411181240}
+  m_Layer: 5
   m_Name: Card
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45,7 +45,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2624703225764245320}
   m_CullTransparentMesh: 0
---- !u!114 &2311416887831763508
+--- !u!114 &3233250320411181240
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -81,8 +81,8 @@ GameObject:
   m_Component:
   - component: {fileID: 193212264114486247}
   - component: {fileID: 1137807980952408871}
-  - component: {fileID: 8798869435727551888}
-  m_Layer: 0
+  - component: {fileID: 173874407103595891}
+  m_Layer: 5
   m_Name: Card
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -98,14 +98,14 @@ RectTransform:
   m_GameObject: {fileID: 3917322824398883721}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.27072412, y: 0.27072412, z: 0.27072412}
+  m_LocalScale: {x: 0.2707241, y: 0.2707241, z: 0.2707241}
   m_Children: []
   m_Father: {fileID: 8642718230670962614}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 8.7, y: 21.5}
+  m_AnchoredPosition: {x: 11.725, y: 21.5}
   m_SizeDelta: {x: 75, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1137807980952408871
@@ -116,7 +116,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3917322824398883721}
   m_CullTransparentMesh: 0
---- !u!114 &8798869435727551888
+--- !u!114 &173874407103595891
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -153,6 +153,7 @@ GameObject:
   - component: {fileID: 8642718230670962614}
   - component: {fileID: 8642718230670962616}
   - component: {fileID: 8642718230670962615}
+  - component: {fileID: 8066113922537004291}
   m_Layer: 0
   m_Name: Seat#_StatusUI
   m_TagString: Untagged
@@ -277,3 +278,15 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &8066113922537004291
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8642718230670962613}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2b0520a8c0efb74a94cf48a67529db3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
