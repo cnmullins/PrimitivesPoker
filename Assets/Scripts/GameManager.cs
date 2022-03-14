@@ -31,97 +31,121 @@ public class GameManager : MonoBehaviour {
     public static bool isGameOver { get {
         return Dealer.playersLL.Count() <= 1;
     } }
-    private List<PlayerAction> _actions;
     private int _numOfPlayers;
 
     private BasePlayer _currentPlayer;
 
     #region UI_Variables
     [Header("UI Variables")]
+    public TMP_Text potText;
     public GameObject actionGroup;
     public GameObject balancesGroup;
-    public TMP_Text betText;
+    [SerializeField]
+    public TMP_Text _betText;
     [SerializeField]
     private Button _checkButton;
     [SerializeField]
     private Button _callButton;
     [SerializeField]
-    private TMP_Text _potText;
-    [SerializeField]
     private Slider _betSlider;
-    [SerializeField]
     private TMP_Text[] _balanceTexts;
     #endregion
 
     private IEnumerator Start() {
         Application.targetFrameRate = 60;
         instance = this;
+        _balanceTexts = balancesGroup.GetComponentsInChildren<TMP_Text>();
         yield return new WaitUntil(() => {
             return arePlayersInScene;
         });
+        //initialize UI
+        actionGroup.SetActive(true);
+        potText.text = "$0";
+        _betText.text = "$" + ((float)Dealer.playersLL.First.Value.balance * 0.025f).ToString("F0");
+        _ToggleCallButton(false);
         //Handle ALL logic here
         do {
             yield return StartCoroutine(_StartNewHand());
-            //bool cardFlipReady = false;
-            do { //create new rotation with dealer button in mind & assign cards
-                var curRotation = Dealer.playersLL;
-                var curPlayNode = curRotation.First;
-                while (curRotation.First.Value != Dealer.curDealer) {
-                    if (!curRotation.First.Value.isActiveAndEnabled) {
-                        curRotation.RemoveFirst();
-                        continue;
-                    }
-                    curRotation.AddLast(curRotation.First);
+            
+            var curRotation = Dealer.playersLL;
+            var curPlayNode = curRotation.First;
+            while (curRotation.First.Value != Dealer.curDealer) {
+                if (!curRotation.First.Value.isActiveAndEnabled) {
                     curRotation.RemoveFirst();
+                    continue;
                 }
-                foreach (var player in curRotation) {
-                    player.hand = Dealer.instance.GetHand();
-                    //player.Debug_PrintHand();
-                }
+                var tempNode = curRotation.First;
+                curRotation.RemoveFirst();
+                curRotation.AddLast(tempNode);
+            }
+            foreach (var player in curRotation) {
+                player.SetHand(Dealer.instance.GetHand());
+            }
+            do { //start new hand here
                 
                 do { // start player turns
+                    _currentPlayer = curPlayNode.Value;
                     curPlayNode.Value.ToggleBalanceHighlight(true);
                     //cycle through players until all active players have paid current bet or folded
                     //yield return wait for player input
+
+                    print("caught before"); // caught below
                     if (curPlayNode.Value.isHuman) {
+                        print("start await");
                         yield return new WaitUntil(delegate {
-                            print("Awaiting: " + curPlayNode.Value.transform.parent.name + " -> " + curPlayNode.Value.handAction);
-                            return curPlayNode.Value.handAction != PlayerAction.NoAction
-                            || curPlayNode.Value.handAction == PlayerAction.Fold;
+                            return curPlayNode.Value.handAction != PlayerAction.NoAction;
                         });
+                        print("end await");
                     }
                     else {
+                        //invalid cast exception
                         var bot = (BotPlayer)curPlayNode.Value;
                         print("Implement bot action");
-                        //bot.GenerateAction();
+                        //yield return bot.GenerateAction(curPlayNode.Value);
                     }
+                    print("caught after"); //caught above
+
                     switch (curPlayNode.Value.handAction) {
-                        case PlayerAction.Check:
-                            break;
+                        case PlayerAction.Check: break;
                         case PlayerAction.Bet:
-                            Dealer.communityBet = curPlayNode.Value.currentBet;
+                            Dealer.pot += curPlayNode.Value.currentBet;
+                            _balanceTexts[curPlayNode.Value.seatIndex].text = "$" + curPlayNode.Value.balance;
                             break;
                         case PlayerAction.Call:
                             curPlayNode.Value.currentBet = Dealer.communityBet;
+                            _balanceTexts[curPlayNode.Value.seatIndex].text = "$" + curPlayNode.Value.balance;
                             break;
                         case PlayerAction.Fold:
+                            curRotation.Remove(curPlayNode);
                             break;
                     }
                     curPlayNode.Value.ToggleBalanceHighlight(false);
-                    curPlayNode = curPlayNode.Next;
-                //iterate until new card flip (check for uniform community bet)
-                } while (Dealer.playersLL.First(p => p.currentBet != Dealer.communityBet));
-                //check for river (count com cards)
-                /*
-                if (Dealer.communityCards.Count <= 4)
-                    Dealer.
-                */
+                    curPlayNode = curPlayNode.Next ?? curRotation.First;
+                } while (!HaveAllPlayersGone());
 
-                //while not river
+                print("Ooops 1"); //reached twice before "crashing"
+                _ToggleCallButton(false);
+                //check for river (count com cards)
+                //if (Dealer.communityBet > 0)
+                  //  Dealer.instance.GatherBetsToPot();
+
+                if (Dealer.communityCards.Count == 0)
+                    Dealer.instance.Flop(3);
+                else
+                    Dealer.instance.Flop();
+                
+                foreach (var p in curRotation)
+                    p.handAction = PlayerAction.NoAction;
+
+                print("oops 2"); // this is reached twice before "crashing"
             } while (Dealer.communityCards.Count < 5);
 
+            print("Hand has finished");
+            curRotation = Dealer.playersLL;
+            curPlayNode = curRotation.Find(Dealer.curDealer) ?? curRotation.First;
             _EndCurrentHand();
-
+            
+            //declare winner, remove any players that have a 0 balance at the table
         } while (!isGameOver);
     }
 
@@ -141,13 +165,20 @@ public class GameManager : MonoBehaviour {
         else if (numOfPlayers < 6) {
             startAt = Random.Range(0, 2);
         }
+        var playingIndexs = new List<int>();
         for (int i = startAt; i < playerSpawnPos.Length; i += increment) {
             if (numOfPlayers-- < 1) break;
+            playingIndexs.Add(i);
             SeatNewPlayerAt(playerSpawnPos[i], true);
         }
+        //hide unused UI
+        for (int i = 0; i < _balanceTexts.Length; ++i) {
+            if (!playingIndexs.Exists(pI => pI == i))
+                _balanceTexts[i].gameObject.SetActive(false);
+            else
+                _balanceTexts[i].text = "$" + startBalance;
+        }
         Dealer.instance.InitializeValues();
-        
-        //_gameIterator
     }
 
     /// <summary>
@@ -156,20 +187,20 @@ public class GameManager : MonoBehaviour {
     private IEnumerator _StartNewHand() {
         Dealer.instance.GetNewDeck();
         yield return new WaitUntil(delegate() {
+            //print("awaiting for full Deck");
             return Dealer.curDeck.Count == 52;
         });
         foreach (var p in Dealer.playersLL) {
             p.currentBet = 0;
-            p.hand = Dealer.instance.GetHand();
+            p.SetHand(Dealer.instance.GetHand());
         }
+        //print("I'm getting stuck here start");
         // increment all buttons
-        //gameIterator.Iterate();
-
-        //Dealer shift
-        yield return StartCoroutine(Dealer.instance.dealerButton.IterateAsync());
-        yield return StartCoroutine(Dealer.instance.bigBlindButton.IterateAsync());
-        yield return StartCoroutine(Dealer.instance.smallBlindButton.IterateAsync());
+        //yield return StartCoroutine(Dealer.instance.dealerButton.IterateAsync());
+        //yield return StartCoroutine(Dealer.instance.bigBlindButton.IterateAsync());
+        //yield return StartCoroutine(Dealer.instance.smallBlindButton.IterateAsync());
         // start UI
+        //print("I'm getting stuck here end");
         
     }
 
@@ -177,26 +208,11 @@ public class GameManager : MonoBehaviour {
         // dealer distributes pot to winner(s)
 
         Dealer.pot = 0;
-        Dealer.communityBet = 0;
         // dealer destroys hands
-
-        
+        Dealer.instance.ClearCommunityCard();
 
         // dealer restores deck
         
-    }
-
-    private void _UpdatePlayerActions() {
-        var playIt = Dealer.playersLL.First;
-        /*
-        for (int i = 0; i < _actions.Count; ++i) {
-            _actions[i] = players[i].handAction;
-        }*/
-        int i = 0;
-        do {
-            _actions[i] = playIt.Value.handAction;
-            playIt = playIt.Next;
-        } while (playIt != null);
     }
 
     /// <summary>
@@ -228,41 +244,77 @@ public class GameManager : MonoBehaviour {
         /* PLAYER ACTION HANDLING THROUGH UI */
 #region PlayerActionUI    
     public void OnClick_Check() {
-
+        _currentPlayer.Check();
+        _betSlider.value = 0f;
     }
 
     public void OnClick_Fold() {
-
+        _currentPlayer.Fold();
+        _betSlider.value = 0f;
     }
 
     public void OnClick_Call() {
-        //ADD ACTIONS HERE
+        _currentPlayer.Call();
 
         //adjust player balance UI
         _balanceTexts[_currentPlayer.seatIndex].text = "$" + _currentPlayer.balance;
         //adjust pot
-        int newBet = Mathf.RoundToInt(_betSlider.value * (float)_currentPlayer.balance);
-        _potText.text = "$" + newBet;
+        //TODO ADJUST DEALER.POT
+        _betSlider.value = 0f;
     }
 
     public void OnClick_Bet() {
-        _currentPlayer.Bet(_betSlider.value);
+        float sliderVal = Mathf.Clamp(_betSlider.value, 0.025f, 1f);
+        _currentPlayer.Bet(sliderVal);
         //adjust player balance UI
         _balanceTexts[_currentPlayer.seatIndex].text = "$" + _currentPlayer.balance;
         //adjust pot
-        int newBet = Mathf.RoundToInt(_betSlider.value * (float)_currentPlayer.balance);
-        _potText.text = "$" + newBet;
+        int newBet = Mathf.RoundToInt(sliderVal * (float)_currentPlayer.balance);
+        //TODO THE
+        //get next player in the rotation
+        var nextPlayer = Dealer.playersLL.Find(_currentPlayer).Next?.Value ?? Dealer.playersLL.First.Value;
+        int callVal = Mathf.Min((int)Dealer.communityBet, (int)nextPlayer.balance);
+        print("callVal: " + callVal);
+        //TODO ADJUST DEALER.POT
+        _ToggleCallButton(true, callVal); // force players to call instead of check
+        _betSlider.value = 0f;
+
+        foreach (var p in Dealer.playersLL) {
+            if (p.handAction != PlayerAction.Fold && !p.Equals(_currentPlayer))
+                p.handAction = PlayerAction.NoAction;
+        }
     }
 
-    public void OnSlide_Bet() {
-        betText.text = "$" + 
-            (uint)(_betSlider.value * (float)_currentPlayer.balance);
+    public void OnSlide_BetCall() {
+        //TODO:
+            //ADJUST FOR CALL REQUIREMENTS
+        float sliderVal = Mathf.Clamp(_betSlider.value, 0.025f, 1f);
+        _betText.text = "$";
+        if (!_callButton.gameObject.activeInHierarchy) { // bet
+            //check if player will bet on top of another players bet
+            if (Dealer.communityBet > 0) {
+                _betText.text += (sliderVal * ((float)_currentPlayer.balance + Dealer.communityBet)).ToString("F0");
+            } else {
+                _betText.text += (sliderVal * (float)_currentPlayer.balance).ToString("F0");
+            }
+        } else { // call
+        print("call slider");
+            float clampedCallVal = Mathf.Clamp(sliderVal * (_currentPlayer.balance + Dealer.communityBet), 
+                                               Dealer.communityBet, 
+                                               _currentPlayer.balance);
+            _betText.text += clampedCallVal.ToString("F0");
+        }
     }
 
-    private void _ToggleCallButton(bool showing) {
-        _callButton.enabled  = showing;
-        _checkButton.enabled = !showing;
+    private void _ToggleCallButton(bool showing, in int callVal=-1) {
+        //print("Call button toggled");
+        //kill image and button
+        //_callButton.enabled  = showing;
+        //_checkButton.enabled = !showing;
+        _callButton.gameObject.SetActive(showing);
+        _checkButton.gameObject.SetActive(!showing);
         // adjust bet slider to only allow +callValue
+        _callButton.GetComponentInChildren<TMP_Text>().text = (!showing && callVal == -1) ? "Call" : "Call:\n$" + callVal;
     }
 
 #endregion

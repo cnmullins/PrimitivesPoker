@@ -1006,7 +1006,7 @@ Transform:
   - {fileID: 2048633890}
   - {fileID: 37003442}
   m_Father: {fileID: 2033840070}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &251095821
 GameObject:
@@ -1097,7 +1097,7 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2033840066}
+      - m_Target: {fileID: 1286891220}
         m_MethodName: OnSlide_Bet
         m_Mode: 1
         m_Arguments:
@@ -1985,7 +1985,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &505214922
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2090,16 +2090,16 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 505214921}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -64}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -87}
+  m_LocalScale: {x: 1.3589543, y: 1.3589541, z: 1.3589541}
   m_Children: []
-  m_Father: {fileID: 2033840070}
-  m_RootOrder: 0
+  m_Father: {fileID: 2048380282}
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0, y: -48}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchoredPosition: {x: 0, y: 53.9}
+  m_SizeDelta: {x: 200, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1001 &519702271
 PrefabInstance:
@@ -2734,8 +2734,8 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_HighlightedColor: {r: 0.9803922, g: 1, b: 0.5411765, a: 1}
+    m_PressedColor: {r: 0.7775967, g: 0.7924528, b: 0.4448202, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
     m_ColorMultiplier: 1
@@ -2756,7 +2756,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2033840066}
+      - m_Target: {fileID: 1286891220}
         m_MethodName: OnClick_Bet
         m_Mode: 1
         m_Arguments:
@@ -3639,8 +3639,8 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_HighlightedColor: {r: 0.47450984, g: 0.9725491, b: 0.48627454, a: 1}
+    m_PressedColor: {r: 0.38314345, g: 0.7735849, b: 0.3920849, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
     m_ColorMultiplier: 1
@@ -3661,7 +3661,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2033840066}
+      - m_Target: {fileID: 1286891220}
         m_MethodName: OnClick_Check
         m_Mode: 1
         m_Arguments:
@@ -3671,7 +3671,7 @@ MonoBehaviour:
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
-        m_CallState: 0
+        m_CallState: 2
 --- !u!114 &1150696007
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4176,6 +4176,13 @@ MonoBehaviour:
   - {fileID: 1123966281}
   - {fileID: 1177362192}
   - {fileID: 878975053}
+  potText: {fileID: 505214922}
+  actionGroup: {fileID: 2048380281}
+  balancesGroup: {fileID: 245646304}
+  _betText: {fileID: 1465788908}
+  _checkButton: {fileID: 1150696006}
+  _callButton: {fileID: 1429080046}
+  _betSlider: {fileID: 251095823}
 --- !u!4 &1286891221
 Transform:
   m_ObjectHideFlags: 0
@@ -4465,23 +4472,12 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2033840066}
+      - m_Target: {fileID: 1286891220}
         m_MethodName: OnClick_Call
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_MethodName: 
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -4650,7 +4646,7 @@ RectTransform:
   - {fileID: 829949645}
   - {fileID: 1873089444}
   m_Father: {fileID: 2033840070}
-  m_RootOrder: 1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -5025,8 +5021,8 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_HighlightedColor: {r: 1, g: 0.48627454, b: 0.48627454, a: 1}
+    m_PressedColor: {r: 0.735849, g: 0.36445352, b: 0.36445352, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
     m_ColorMultiplier: 1
@@ -5047,7 +5043,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2033840066}
+      - m_Target: {fileID: 1286891220}
         m_MethodName: OnClick_Fold
         m_Mode: 1
         m_Arguments:
@@ -5057,7 +5053,7 @@ MonoBehaviour:
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
-        m_CallState: 0
+        m_CallState: 2
 --- !u!114 &1534741399
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6235,7 +6231,6 @@ GameObject:
   - component: {fileID: 2033840069}
   - component: {fileID: 2033840068}
   - component: {fileID: 2033840067}
-  - component: {fileID: 2033840066}
   m_Layer: 5
   m_Name: GameCanvas
   m_TagString: Untagged
@@ -6243,27 +6238,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &2033840066
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2033840065}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e338d522d114c444d82488a2819e1344, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  actionGroup: {fileID: 2048380281}
-  balancesGroup: {fileID: 245646304}
-  betValText: {fileID: 1465788908}
-  potText: {fileID: 505214922}
-  betSlider: {fileID: 251095823}
-  checkButton: {fileID: 1150696006}
-  callButton: {fileID: 1429080046}
-  betText: {fileID: 1465788908}
-  decisionTimerBar: {fileID: 686692014}
 --- !u!114 &2033840067
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6335,7 +6309,6 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: -0}
   m_LocalScale: {x: 0.0468, y: 0.0468, z: 0.0468}
   m_Children:
-  - {fileID: 505214924}
   - {fileID: 1440917715}
   - {fileID: 245646305}
   - {fileID: 2048380282}
@@ -6382,12 +6355,13 @@ RectTransform:
   - {fileID: 300861782}
   - {fileID: 1465788907}
   - {fileID: 12172822}
+  - {fileID: 505214924}
   m_Father: {fileID: 2033840070}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: -28.7}
   m_SizeDelta: {x: 233, y: 75}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2048380283

@@ -47,12 +47,13 @@ public class Blind : MonoBehaviour {
         StartCoroutine("_MoveToNext");
     }
 
-    public IEnumerator IterateAsync() {
+    public IEnumerator IterateAsync() { // stuck here???
         yield return new WaitUntil(() => {
+            print("ferererererererep");
             return GameManager.arePlayersInScene;
         });
         iterator.Iterate(); // null
-        StartCoroutine("_MoveToNext");
+        //StartCoroutine("_MoveToNext");
     }
 
     /// <summary>
@@ -64,8 +65,7 @@ public class Blind : MonoBehaviour {
         do {
             targetPos = iterator.currentPlayer.Value.buttonPos;
             movePos = (targetPos - transform.position).normalized;
-            //transform.position += movePos * 4.25f * Time.fixedDeltaTime;
-            transform.Translate(movePos * 4.25f * Time.fixedDeltaTime, Space.World);
+            transform.Translate(movePos * 6.0f * Time.fixedDeltaTime, Space.World);
             yield return new WaitForFixedUpdate();
         } while (!_ApproximatePosition(targetPos, transform.position));
         yield return null;
