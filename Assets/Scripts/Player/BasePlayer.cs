@@ -12,7 +12,8 @@ public enum PlayerAction {
 }
 
 public abstract class BasePlayer : MonoBehaviour {
-    public uint balance;
+    public string playerName    { get; private set; }
+    public int balance         { get; protected set; }
     public uint currentBet;
     public PlayerAction handAction;
     public Card[] hand          { get; private set; }
@@ -27,12 +28,10 @@ public abstract class BasePlayer : MonoBehaviour {
     // must be Awake() for instantiation + initialization
     protected virtual void Awake() {
         char seatNum = transform.parent.name.Split('_')[1][0];
-        _uiObserver = GameObject.FindGameObjectWithTag("SeatBalances").transform.
-            Find("Seat" + seatNum + "_StatusUI").GetComponent<PlayerObserver>();
         hand = new Card[2];
         string parentStr = transform.parent.name;
         seatIndex = (parentStr[parentStr.Length - 1] - '0') - 1;
-        balance = GameManager.instance.startBalance;
+        balance = (int)GameManager.instance.startBalance;
         currentBet = 0;
         handAction = PlayerAction.NoAction;
 
@@ -48,18 +47,24 @@ public abstract class BasePlayer : MonoBehaviour {
         handAction = PlayerAction.Check;
     }
 
+    public virtual void Award(in uint winnings) {
+        balance += (int)winnings;
+        Debug.Log(playerName + " is awarded with " + winnings);
+        _uiObserver.UpdateBalance(balance);
+    }
+
     public virtual void Bet(float sliderVal) {
         handAction = PlayerAction.Bet;
-        uint betVal = (uint)(sliderVal * (float)balance);
+        int betVal = (int)(sliderVal * (float)balance);
         if (Dealer.communityBet > currentBet)
-            betVal += (uint)Mathf.Clamp((betVal - Dealer.communityBet), 0, balance);
-        currentBet = betVal;
+            betVal += (int)Mathf.Clamp((betVal - Dealer.communityBet), 0, balance);
+        currentBet = (uint)betVal;
         balance -= betVal;
-        Dealer.pot += betVal;
+        //Dealer.pot += betVal;
 
         // handle if the player is going all-in
         if (sliderVal == 1f) {
-            currentBet += balance;
+            currentBet += (uint)balance;
             balance = 0;
             handAction = PlayerAction.AllIn;
         }
@@ -69,9 +74,9 @@ public abstract class BasePlayer : MonoBehaviour {
     public virtual void Call() {
         handAction = PlayerAction.Call;
         uint callVal = (uint)Mathf.Min(Dealer.communityBet - currentBet, balance);
-        balance -= callVal;
-        Dealer.pot += callVal;
-        currentBet += callVal;
+        balance -= (int)(callVal - currentBet);
+        currentBet = callVal;
+        //Dealer.pot += callVal;
         // handle if the player is going all-in
         if (balance <= callVal) { //FIX ME
             balance = 0;
@@ -99,5 +104,31 @@ public abstract class BasePlayer : MonoBehaviour {
     //toggled in GameManager Start() function
     public void ToggleBalanceHighlight(in bool active) {
         _uiObserver.balanceText.color = (active) ? Color.yellow : Color.white;
+        _uiObserver.nameText.color = (active) ? Color.yellow : Color.white;
+    }
+
+    public string SetRandomizedName() {
+        string[] names = System.IO.File.ReadAllLines(Application.persistentDataPath + "\\Resources\\NamesList.txt");
+        playerName = names[UnityEngine.Random.Range(0, names.Length)];
+        _uiObserver.nameText.text = playerName + "_Bot";
+        return _uiObserver.nameText.text;
+    }
+
+    public string SetHumanName(in int playerNum=-1) {
+        string suffixID = "";
+        if (playerNum != -1) {
+            suffixID = '_' + System.Convert.ToString(playerNum);
+        }
+        playerName = "Player";
+        return playerName + suffixID;
+        //_uiObserver.nameText.text = playerName + suffixID;
+        //return _uiObserver.nameText.text;
+    }
+
+    public void SetUIObserver(PlayerObserver pO) {
+        //Debug.Log("pO is: " + (pO == null));
+        pO.Initialize(this); //null ref
+        pO.nameText.text = playerName;
+        _uiObserver = pO;
     }
 }

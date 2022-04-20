@@ -10,18 +10,20 @@ using TMPro;
 
 public class PlayerObserver : MonoBehaviour {
     public TMP_Text balanceText { get; private set; }
+    public TMP_Text nameText    { get; private set; }
     private RawImage[] _handImages;
-    private BasePlayer _player;
+    private BasePlayer _player; 
     private static Texture[] _cardAssets = new Texture[4];
 
     private void Start() {
         //initialize values
         balanceText = GetComponent<TMP_Text>();
+        nameText = transform.GetChild(2).GetComponent<TMP_Text>();
+        //nameText.text = _player.playerName;
         _handImages = GetComponentsInChildren<RawImage>();
         //Card must be initialized from here
         foreach (var h in _handImages) 
             h.color = Card.BACK_COLOR;
-        //assign _player?
     }
 
     public void SetHandUI(in Card[] hand) {
@@ -40,7 +42,12 @@ public class PlayerObserver : MonoBehaviour {
             h.enabled = active;
     }
 
-    public void UpdateBalance(in uint balance) {
+    public void UpdateBalance(in int balance) {
         balanceText.text = "$" + balance;
+    }
+
+    public void Initialize(in BasePlayer player) {
+        nameText.text = player.playerName;
+        UpdateBalance(player.balance);
     }
 }

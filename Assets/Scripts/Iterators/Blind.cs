@@ -37,23 +37,26 @@ public class Blind : MonoBehaviour {
                             select seat.GetChild(0).GetComponent<BasePlayer>()).ToList());
     }
 
+    public void IncrementBlind() {
+        
+    }
+
     /// <summary>
-    /// Inheritted but also increments buy in.
+    /// Inheritted
     /// </summary>
     public void Iterate() {
         iterator.Iterate();
         _baseVal += _incrementorVal;
-        _buyIn =  (uint)(_baseVal * 20f);
+        //_buyIn =  (uint)(_baseVal * 20f);
         StartCoroutine("_MoveToNext");
     }
 
     public IEnumerator IterateAsync() { // stuck here???
         yield return new WaitUntil(() => {
-            print("ferererererererep");
             return GameManager.arePlayersInScene;
         });
-        iterator.Iterate(); // null
-        //StartCoroutine("_MoveToNext");
+        iterator.Iterate();
+        StartCoroutine("_MoveToNext");
     }
 
     /// <summary>

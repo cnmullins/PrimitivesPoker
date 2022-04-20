@@ -3,9 +3,7 @@ Author: Christian Mullins
 Summary: Class to construct cards based on enumerators.
 */
 using UnityEngine;
-using UnityEngine.UI;
 using System;
-using System.Collections;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -100,7 +98,7 @@ public class Card {
         }
         output += " of ";
         switch (suit) {
-            case Suit. Spade:  output += "Spades";   break;
+            case Suit.Spade:   output += "Spades";   break;
             case Suit.Club:    output += "Clubs";    break;
             case Suit.Heart:   output += "Hearts";   break;
             case Suit.Diamond: output += "Diamonds"; break;
@@ -109,18 +107,60 @@ public class Card {
     }
 
     /// <summary>
+    /// Properly format name of card in a condensed form.
+    /// </summary>
+    /// <returns>"'Value' of 'suit'"</returns>
+    public string ToShortString() {
+        string output = string.Empty;
+        if ((int)value < 10) {
+            output = System.Convert.ToString((int)value + 1);
+        }
+        else {
+            output += "JQKA"[(int)value - 10];
+        }
+        output += "♠♣♥♦"[(int)suit];
+        return output;
+    }
+
+    public static bool SequenceCheck(in Card[] cards) {
+        var cardsList = new List<Card>(cards);
+        cardsList.Sort();
+        int tempVal = (int)cardsList[0].value;
+        for (int i = 0; i < cardsList.Count; ++i) {
+            if (tempVal != (int)cardsList[i].value) {
+                return false;
+            }
+            //check for overflow enum?
+            tempVal++;
+        }
+        return true;
+    }
+
+    /// <summary>
     /// Get score of the hand at the showdown.
     /// </summary>
     /// <param name="hand">Community and player hand.</param>
     /// <returns>Numerical evaluation of cards based on their score.</returns>
-    public static int ScoreHand(List<Card> hand) {
+    public static int ScoreHand(in Card[] comHand, in Card[] pHand) { // partition card list?
+    /*
+     * Algorithm:
+     *  -Sort hand
+     *  -Check for straights and flushes
+     *
+     */
         // initialize values for scoring
+        List<Card> hand = new List<Card>(comHand);
+        if (pHand == null) return -1;
+        hand.AddRange(pHand);
         var score = Score.Highcard; // start with lowest score
-        var suitCount = new List<int>() { 0, 0, 0, 0 };
-        var valueCount = new List<int>(13);
+        List<int> suitCount = Enumerable.Repeat(0, 4).ToList();
+        List<int> valueCount = Enumerable.Repeat(0, 13).ToList();
+        int maxSuitDuplicates, maxValueDuplicates;
+        int seq, greatestSeq;
+        int? seqTracker = null;
         /*
             TODO
-                -Check if the default .Sort() for List<Card> will work.
+                -Double check if the default .Sort() for List<Card> will work.
         */
         hand.Sort(delegate(Card a, Card b) {
             if      (a.value < b.value) return -1;
@@ -131,14 +171,15 @@ public class Card {
             ++suitCount[(int)card.suit];
             ++valueCount[(int)card.value];
         }
-        int duplicates = suitCount.Max();
+        maxSuitDuplicates = suitCount.Max();
+        maxValueDuplicates = valueCount.Max();
         bool isFlush = false;
-        var highCard = (Value)valueCount.FindLastIndex(0, 13, v => v > 0);
+        Value highCard = (Value)Mathf.Max((int)pHand[0].value, (int)pHand[1].value);
         // evaluate values for scoring
         // check for sequence and track it
-        int? seqTracker = null;
-        int seq = 1;
-        int greatestSeq = 1;
+        seqTracker = null;
+        seq = 1;
+        greatestSeq = 1;
         for (int i = 0; i < hand.Count; ++i) {
             // catch if ace to two
             if (seqTracker == 12) seqTracker = -1;
@@ -176,22 +217,27 @@ public class Card {
         }
         else {
             // evaluate duplicates and suit count
-            if (duplicates > 1) { // check for duplicate values
-                switch (duplicates) {
+            if (maxValueDuplicates > 1) { // check for duplicate values
+                switch (maxValueDuplicates) {
                     case 2: score = Score.Pair;
                         break;
                     case 3: score = Score.ThreeOfAKind;
                         // check for the second max for full house
-                        var temp = new List<int>(valueCount);
-                        temp.RemoveAt(valueCount.IndexOf(suitCount.Max()));
-                        if (temp.Max() > 1) score = Score.FullHouse;
+                        var temp = valueCount;
+                        //Debug.Log("bugbug?: " + valueCount.IndexOf(suitCount.Max()));
+                        int index = valueCount.IndexOf(suitCount.Max());
+                        if (temp.Max() > 2) {
+                            Debug.Log("index of: " + index);
+                            temp.RemoveAt(index);
+                            score = Score.FullHouse;
+                        }
                         break;
                     case 4: score = Score.FourOfAKind;
                         break;
                 }
             }
         }
-        return ((int)score * 10) + (int)highCard;
+        return ((int)score * 100) + (int)highCard;
     }
 
 }

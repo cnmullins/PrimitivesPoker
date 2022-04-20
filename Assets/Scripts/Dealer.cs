@@ -10,11 +10,7 @@ using UnityEngine.UI;
 
 public class Dealer : MonoBehaviour {
     public static Dealer instance;
-    public static uint pot { get { return _pot; }
-    set {
-        GameManager.instance.potText.text = "$" + value;
-        value = _pot;
-    } }
+    public static uint pot => _pot;
     public static BasePlayer curDealer;
     public static uint communityBet { get {
         uint bet = 0;
@@ -27,9 +23,9 @@ public class Dealer : MonoBehaviour {
     public static List<Card> communityCards   { get; private set; }
     public static List<Card> curDeck          { get; private set; }
     public static LinkedList<BasePlayer> playersLL    { get; private set; }
-    //public Blind bigBlindButton               { get; private set; }
-    //public Blind smallBlindButton             { get; private set; }
-    //public Blind dealerButton                 { get; private set; }
+    public Blind bigBlindButton               { get; private set; }
+    public Blind smallBlindButton             { get; private set; }
+    public Blind dealerButton                 { get; private set; }
 
     private List<RawImage> _comCardsUI; //communityCardsUI
     private static uint _pot;
@@ -49,7 +45,6 @@ public class Dealer : MonoBehaviour {
         // assign dealer
         curDealer = playersLL.First.Value;
         // set buttons at their starting index
-        /*
         foreach (var b in FindObjectsOfType<Blind>()) {
             b.transform.position = playersLL.First.Value.buttonPos;
             if (b.name == "DealerButton") {
@@ -63,8 +58,8 @@ public class Dealer : MonoBehaviour {
             }
             StartCoroutine(b.IterateAsync());
             bigBlindButton = b;
-        } */
-        pot = 0;
+        }
+        ClearPot();
     }
 
     /// <summary>
@@ -96,28 +91,17 @@ public class Dealer : MonoBehaviour {
         return hand;
     }
 
-    /// <summary>
-    /// Take all the current "in-hand" bets and moves them to the dealer for
-    /// the community pot.
-    /// </summary>
-    public void GatherBetsToPot() {
-        foreach (var p in playersLL) {
-            pot += p.currentBet;
-            p.currentBet = 0;
-        }
+    public static uint AddToPot(in uint addition) {
+        PotObserver.instance.IncrementFeedback((int)addition);
+        _pot += addition;
+        GameManager.instance.potText.text = "$" + _pot;
+        return _pot;
     }
 
-    /// <summary>
-    /// Check every player's action state and only return true if 
-    /// everyone has gone.
-    /// </summary>
-    /// <returns>Is the round over or not.</returns>
-    public bool IsRoundOver() {
-        foreach (var p in playersLL) {
-            if (p.handAction == PlayerAction.NoAction)
-                return false;
-        }
-        return true;
+    public static void ClearPot() {
+        PotObserver.instance.ClearFeedback();
+        _pot = 0;
+        GameManager.instance.potText.text = "$" + _pot;
     }
 
     /// <summary>
@@ -130,16 +114,31 @@ public class Dealer : MonoBehaviour {
         int currentWinner = 0;
         //var findMax = playersLL.ToList<BasePlayer>();
         //playersLL.Max<BasePlayer>();
+        string debugStr = "--PLAYER SCORES--\n";
         foreach (var p in playersLL) {
-            var currentHand = new List<Card>(p.hand);
-            currentHand.AddRange(communityCards.ToList<Card>());
-            //currentHand.Max<BasePlayer>(x => Card.ScoreHand(x));
-            int temp = Card.ScoreHand(currentHand);
+            int temp = Card.ScoreHand(communityCards.ToArray(), p.hand);
+            debugStr += p.playerName + ": " + temp + '\n';
             if (temp < currentWinner) {
                 currentWinner = temp;
             }
         }
+        Debug.Log(debugStr);
         return winningIndex;
+    }
+
+    public BasePlayer[] GetMultipleWinners() {
+        var winnersOut = new List<BasePlayer>();
+        int curBest = -1;
+        foreach (var p in playersLL) {
+            int temp = Card.ScoreHand(communityCards.ToArray(), p.hand);
+            if (temp > curBest) {
+                curBest = temp;
+                winnersOut.Clear();
+            } else if (temp == curBest) {
+                winnersOut.Add(p);
+            }
+        }
+        return winnersOut.ToArray();
     }
 
     public void Flop(in int count=1) {
@@ -152,17 +151,17 @@ public class Dealer : MonoBehaviour {
             Card newCard = curDeck.First();
             curDeck.RemoveAt(0);
             communityCards.Add(newCard);
-            //TODO: update _comCardsUI
             int newCardIndex = _comCardsUI.FindIndex(image => image.texture == null);
-            //print("fix your code");
             _comCardsUI[newCardIndex].texture = Card.cardAssets[(int)newCard.suit][(int)newCard.value];
         }
     }
 
     public void ClearCommunityCard() {
         communityCards.Clear();
-        foreach (var image in _comCardsUI)
+        foreach (var image in _comCardsUI) {
             image.texture = null;
+        }
+        Debug.Log("Community cards cleared");
     }
 
     private void _ShuffleDeck(ref List<Card> deck) {

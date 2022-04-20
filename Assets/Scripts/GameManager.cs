@@ -10,6 +10,9 @@ using System.Collections;
 using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour {
+#if UNITY_EDITOR
+    public const bool DEBUG_MODE = false;
+#endif
     public static GameManager instance;
     [Range(200, 500)]
     public uint startBalance;
@@ -24,12 +27,11 @@ public class GameManager : MonoBehaviour {
     public Transform[] playerSpawnPos;
     [Header("Card Suit Image")]
     public static Material[] cardSuitMats;
-    //public static PlayerFocuser gameIterator;
     public static bool arePlayersInScene { get {
         return instance.playerSpawnPos.Any<Transform>(s => s.childCount > 0);
     } }
     public static bool isGameOver { get {
-        return Dealer.playersLL.Count() <= 1;
+        return Dealer.playersLL.Count <= 1;
     } }
     private int _numOfPlayers;
 
@@ -54,14 +56,16 @@ public class GameManager : MonoBehaviour {
     private IEnumerator Start() {
         Application.targetFrameRate = 60;
         instance = this;
-        _balanceTexts = balancesGroup.GetComponentsInChildren<TMP_Text>();
+        _balanceTexts = (from text in balancesGroup.GetComponentsInChildren<TMP_Text>()
+            where text.name.Contains("StatusUI")
+            select text).ToArray();
+
         yield return new WaitUntil(() => {
             return arePlayersInScene;
         });
         //initialize UI
         actionGroup.SetActive(true);
         potText.text = "$0";
-        _betText.text = "$" + ((float)Dealer.playersLL.First.Value.balance * 0.025f).ToString("F0");
         _ToggleCallButton(false);
         //Handle ALL logic here
         do {
@@ -78,9 +82,17 @@ public class GameManager : MonoBehaviour {
                 curRotation.RemoveFirst();
                 curRotation.AddLast(tempNode);
             }
+#if UNITY_EDITOR
+            bool debugMode = true;
+            if (debugMode) {
+                
+            }
+#endif            
+            // deal cards
             foreach (var player in curRotation) {
                 player.SetHand(Dealer.instance.GetHand());
             }
+            
             do { //start new hand here
                 
                 do { // start player turns
@@ -89,61 +101,83 @@ public class GameManager : MonoBehaviour {
                     //cycle through players until all active players have paid current bet or folded
                     //yield return wait for player input
 
-                    print("caught before"); // caught below
                     if (curPlayNode.Value.isHuman) {
-                        print("start await");
                         yield return new WaitUntil(delegate {
+                            
                             return curPlayNode.Value.handAction != PlayerAction.NoAction;
                         });
-                        print("end await");
                     }
                     else {
                         //invalid cast exception
                         var bot = (BotPlayer)curPlayNode.Value;
+                        //var bot = (BotPlayer)curPlayNode.Value;
                         print("Implement bot action");
-                        //yield return bot.GenerateAction(curPlayNode.Value);
                     }
-                    print("caught after"); //caught above
 
                     switch (curPlayNode.Value.handAction) {
                         case PlayerAction.Check: break;
                         case PlayerAction.Bet:
-                            Dealer.pot += curPlayNode.Value.currentBet;
-                            _balanceTexts[curPlayNode.Value.seatIndex].text = "$" + curPlayNode.Value.balance;
+                            Dealer.AddToPot(curPlayNode.Value.currentBet);
                             break;
                         case PlayerAction.Call:
+                            Dealer.AddToPot(Dealer.communityBet - curPlayNode.Value.currentBet);
                             curPlayNode.Value.currentBet = Dealer.communityBet;
-                            _balanceTexts[curPlayNode.Value.seatIndex].text = "$" + curPlayNode.Value.balance;
                             break;
                         case PlayerAction.Fold:
-                            curRotation.Remove(curPlayNode);
                             break;
                     }
                     curPlayNode.Value.ToggleBalanceHighlight(false);
                     curPlayNode = curPlayNode.Next ?? curRotation.First;
                 } while (!HaveAllPlayersGone());
 
-                print("Ooops 1"); //reached twice before "crashing"
                 _ToggleCallButton(false);
                 //check for river (count com cards)
-                //if (Dealer.communityBet > 0)
-                  //  Dealer.instance.GatherBetsToPot();
-
                 if (Dealer.communityCards.Count == 0)
                     Dealer.instance.Flop(3);
                 else
                     Dealer.instance.Flop();
-                
-                foreach (var p in curRotation)
-                    p.handAction = PlayerAction.NoAction;
-
-                print("oops 2"); // this is reached twice before "crashing"
+                //check for remaining players if a lot of people have folded
+                int foldCount = 1;
+                foreach (var p in curRotation) {
+                    if (p.handAction != PlayerAction.Fold) {
+                        p.handAction = PlayerAction.NoAction;
+                    }
+                    else  {
+                        if (foldCount >= curRotation.Count - 1) {
+                            //call current player the winner
+                            p.Award(Dealer.pot);
+                            goto endHand;
+                        }
+                        foldCount++;
+                    }   
+                }
             } while (Dealer.communityCards.Count < 5);
+            //declare winner
+            int winID = Dealer.instance.DeclareWinner();
+#if DEBUG || UNITY_EDITOR            
+            DebugTools.ScoreToTextFile(Dealer.communityCards.ToArray(), curRotation.ToArray());
+#endif
+            if (winID == -1) {
+                print("A TIE HAS OCCURED!!");
+                var winners = Dealer.instance.GetMultipleWinners();
+                foreach (var w in winners)
+                    w.Award(Dealer.pot / (uint)winners.Length);
+            }
+            else {
+                var winningPlayer = Dealer.playersLL.ToArray()[winID];
+                print("WINNER IS: " + winningPlayer.playerName);
+                winningPlayer.Award(Dealer.pot);
+            }
+            
 
-            print("Hand has finished");
-            curRotation = Dealer.playersLL;
-            curPlayNode = curRotation.Find(Dealer.curDealer) ?? curRotation.First;
-            _EndCurrentHand();
+            endHand : {
+                foreach (var p in curRotation) {
+                    p.handAction = PlayerAction.NoAction;
+                }
+                curRotation = Dealer.playersLL;
+                curPlayNode = curRotation.Find(Dealer.curDealer) ?? curRotation.First;
+                _EndCurrentHand();
+            }
             
             //declare winner, remove any players that have a 0 balance at the table
         } while (!isGameOver);
@@ -155,28 +189,45 @@ public class GameManager : MonoBehaviour {
     /// <param name="numOfPlayers">Number of players in the game.</param>
     public void StartNewGame(int numOfPlayers) {
         _numOfPlayers = numOfPlayers;
-        int increment = 1;
-        int startAt = 0;
-        // determine seat spacing
-        if (numOfPlayers <= 3){     
-            startAt = Random.Range(0, 3);
-            increment++;
+        bool[] seating = Enumerable.Repeat(false, 7).ToArray();
+                
+        for (int i = 0; i < numOfPlayers; ++i) {
+            seating[i] = true;
+            /*
+            FIX LATER, it's causing infinite loop
+            int randSeat = Random.Range(0, seating.Length);
+            if (!seating[randSeat]) {
+                seating[randSeat] = true;
+            } else {
+                int curIndex = i;
+                while (true) {
+                    if (curIndex >= seating.Length - 1) {
+                        curIndex = 0;
+                    } else if (seating[curIndex] || i < seating.Length - 1) {
+                        ++curIndex;
+                    } else {
+                        seating[curIndex] = true;
+                        break; // from while loop
+                    }
+                }
+            }
+            */
         }
-        else if (numOfPlayers < 6) {
-            startAt = Random.Range(0, 2);
-        }
-        var playingIndexs = new List<int>();
-        for (int i = startAt; i < playerSpawnPos.Length; i += increment) {
-            if (numOfPlayers-- < 1) break;
-            playingIndexs.Add(i);
-            SeatNewPlayerAt(playerSpawnPos[i], true);
-        }
-        //hide unused UI
-        for (int i = 0; i < _balanceTexts.Length; ++i) {
-            if (!playingIndexs.Exists(pI => pI == i))
+        //TODO: shuffle?
+        
+        if (Random.value > 0.5f)
+            seating.Reverse();
+        for (int i = 0, pCounter = 1; i < seating.Length; ++i) {
+            if (seating[i]) {
+                var newP = SeatNewPlayerAt(playerSpawnPos[i], true, pCounter);
+                //assign observers
+                newP.name += (pCounter++).ToString();
+                //Debug.Log("balanceTextObj_" + i + ": " + _balanceTexts[i]);
+                newP.SetUIObserver(_balanceTexts[i].GetComponent<PlayerObserver>());
+            } else {
+                //deactivate unused
                 _balanceTexts[i].gameObject.SetActive(false);
-            else
-                _balanceTexts[i].text = "$" + startBalance;
+            }
         }
         Dealer.instance.InitializeValues();
     }
@@ -194,20 +245,18 @@ public class GameManager : MonoBehaviour {
             p.currentBet = 0;
             p.SetHand(Dealer.instance.GetHand());
         }
-        //print("I'm getting stuck here start");
-        // increment all buttons
-        //yield return StartCoroutine(Dealer.instance.dealerButton.IterateAsync());
-        //yield return StartCoroutine(Dealer.instance.bigBlindButton.IterateAsync());
-        //yield return StartCoroutine(Dealer.instance.smallBlindButton.IterateAsync());
+        //increment all buttons
+        yield return StartCoroutine(Dealer.instance.dealerButton.IterateAsync());
+        yield return StartCoroutine(Dealer.instance.bigBlindButton.IterateAsync());
+        yield return StartCoroutine(Dealer.instance.smallBlindButton.IterateAsync());
         // start UI
-        //print("I'm getting stuck here end");
         
     }
 
     private void _EndCurrentHand() {
         // dealer distributes pot to winner(s)
 
-        Dealer.pot = 0;
+        Dealer.ClearPot();
         // dealer destroys hands
         Dealer.instance.ClearCommunityCard();
 
@@ -220,10 +269,18 @@ public class GameManager : MonoBehaviour {
     /// </summary>
     /// <param name="spawnPos">Where to instantiate.</param>
     /// <param name="isHuman">Is human or bot player.</param>
-    public BasePlayer SeatNewPlayerAt(Transform spawnPos, bool isHuman) {
-        GameObject seating = (isHuman) ? humanPrefab : botPrefab;
-        var newPlayer = Instantiate(seating, spawnPos) as GameObject;
-        var lookPos = Camera.main.transform.position;
+    public BasePlayer SeatNewPlayerAt(Transform spawnPos, bool isHuman, int playerID=-1) {
+        GameObject seatingPlayer = (isHuman) ? humanPrefab : botPrefab;
+        GameObject newPlayer = Instantiate(seatingPlayer, spawnPos);
+        BasePlayer playerObj = newPlayer.GetComponent<BasePlayer>();
+        if (isHuman) {
+            newPlayer.name = playerObj.SetHumanName(playerID);
+        } else {
+            newPlayer.name = playerObj.SetRandomizedName();
+        }
+        //Debug.Log("new player entered: " + playerObj.playerName);
+        Vector3 lookPos = Camera.main.transform.position;
+        //face dealer
         lookPos.y = spawnPos.position.y;
         newPlayer.transform.LookAt(lookPos, newPlayer.transform.up);
         return newPlayer.GetComponent<BasePlayer>();
@@ -259,7 +316,6 @@ public class GameManager : MonoBehaviour {
         //adjust player balance UI
         _balanceTexts[_currentPlayer.seatIndex].text = "$" + _currentPlayer.balance;
         //adjust pot
-        //TODO ADJUST DEALER.POT
         _betSlider.value = 0f;
     }
 
@@ -307,10 +363,7 @@ public class GameManager : MonoBehaviour {
     }
 
     private void _ToggleCallButton(bool showing, in int callVal=-1) {
-        //print("Call button toggled");
         //kill image and button
-        //_callButton.enabled  = showing;
-        //_checkButton.enabled = !showing;
         _callButton.gameObject.SetActive(showing);
         _checkButton.gameObject.SetActive(!showing);
         // adjust bet slider to only allow +callValue
@@ -319,5 +372,4 @@ public class GameManager : MonoBehaviour {
 
 #endregion
     /* END: PLAYER ACTION HANDLING THROUGH UI */
-
 }

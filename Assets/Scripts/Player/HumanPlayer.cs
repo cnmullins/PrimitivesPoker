@@ -15,4 +15,8 @@ public class HumanPlayer : BasePlayer {
     public override void Fold() {
         base.Fold();
     }
+
+    public override void Award(in uint winnings) {
+        base.Award(winnings);
+    }
 }
